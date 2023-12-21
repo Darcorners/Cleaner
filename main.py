@@ -4,7 +4,14 @@ import shutil
 from pathlib import Path
 import subprocess
 import ctypes
-import tkinter
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x200")
+root.title("Сleaner")
+
+Info = tk.Label()
+Info.pack()
 
 def is_admin():
     try:
@@ -12,46 +19,46 @@ def is_admin():
     except:
         return False
 
-def warning():
-    print("Для выполнения программы нужны права администратора.")
-    input("Для продолжения нажмите Enter")
-
 home_path = Path.home()
 
-def Clean(temp_folder):
-    warning()
+def CleanTemp():
+    temp_folder = home_path / "AppData" / "Local" / "Temp"
     if not is_admin():
-        print("Запустите программу с правами администратора")
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
-        sys.exit(0)
+        Info.config(text="Запустите программу с правами администратора")
+        #ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
     else:
-        print("1 - очистить временные файлы\n2 - очистить журнал событий")
-        sel = input("Выберите действие: ")
-        match sel:
-            case '1':
+        try:
+            file_list = os.listdir(temp_folder)
+            for file_name in file_list:
+                file_path = os.path.join(temp_folder, file_name)
                 try:
-                    file_list = os.listdir(temp_folder)
-                    for file_name in file_list:
-                        file_path = os.path.join(temp_folder, file_name)
-                        try:
-                            if os.path.isfile(file_path):
-                                os.remove(file_path)
-                            elif os.path.isdir(file_path):
-                                shutil.rmtree(file_path)
-                                os.rmdir(file_path)
-                        except Exception as ex:
-                            print(ex)
-                    print("очистка выполнена успешно")
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                        os.rmdir(file_path)
                 except Exception as ex:
                     print(ex)
-            case '2':
-                try:
-                    command = 'wevtutil cl System && wevtutil cl Application && wevtutil cl Security'
-                    subprocess.call(command, shell=True)
-                except Exception as ex:
-                    print(ex)
+            Info.config(text="Очистка временных файлов выполнена успешно")
+        except Exception as ex:
+            print(ex)
 
+def LogClear():
+    if not is_admin():
+        Info.config(text="Запустите программу с правами администратора")
+        #ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, __file__, None, 1)
+    else:
+        try:
+            command = 'wevtutil cl System && wevtutil cl Application && wevtutil cl Security'
+            subprocess.call(command, shell=True)
+            Info.config(text="Очистка журнала выполнена успешно")
+        except Exception as ex:
+            print(ex)
 
-temp_folder = home_path / "AppData" / "Local" / "Temp"
+CleanTempButton = tk.Button(command=CleanTemp, text="Очистить временные файлы")
+CleanTempButton.pack()
 
-Clean(temp_folder)
+CleanLogsButton = tk.Button(command=LogClear, text="Очистить журнал windows")
+CleanLogsButton.pack()
+
+root.mainloop()
